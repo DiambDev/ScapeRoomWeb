@@ -168,38 +168,76 @@ export class Game {
   }
 
   // Calcula el resultado de las señales SIN avanzar estado.
-  calcularResultadoSeñales(selectedTexts) {
-    const intento = PHASE2.intentos[this.fase2Intento];
-    const correctas = [...intento.correctSignals].sort();
-    const sel = [...selectedTexts].sort();
-    const match = correctas.length === sel.length && correctas.every((v, i) => v === sel[i]);
-    if (match) {
-      const nextIdx = this.fase2Intento + 1;
-      const ultimo = nextIdx >= PHASE2.maxIntentos;
-      return { ok: true, gameOver: false, ultimo };
-    }
-    const isLast = this.fase2Intento >= PHASE2.maxIntentos - 1;
-    return { ok: false, gameOver: isLast, ultimo: false };
-  }
+calcularResultadoSeñales(selectedTexts) {
+  const intento = PHASE2.intentos[this.fase2Intento];
+
+  const correctas = new Set(
+    intento.correctSignals.map(v => v.trim().toUpperCase())
+  );
+
+  const seleccionadas = [
+    ...new Set(
+      selectedTexts.map(v => v.trim().toUpperCase())
+    )
+  ];
+
+  const coincidencias = seleccionadas.filter(v => correctas.has(v)).length;
+
+  const totalCorrectas = correctas.size;
+  const porcentajeCorrecto = coincidencias / totalCorrectas;
+
+  const pasa = coincidencias >= 3;
+
+  const perfecto = coincidencias === 4;
+
+  const ultimoIntento = this.fase2Intento >= PHASE2.maxIntentos - 1;
+
+  return {
+    ok: pasa,
+    perfecto,
+    coincidencias,
+    totalCorrectas,
+    gameOver: !pasa && ultimoIntento,
+    ultimo: ultimoIntento,
+  };
+}
 
   // Avanza el estado tras mostrar resultado visual al alumno.
   avanzarSeñales(resultado) {
-    if (resultado.ok) {
-      this.fase2Intento++;
-      if (resultado.ultimo) {
-        transition('ok');
-        this._goto(STATE.FASE3);
-      } else {
-        this._goto(STATE.FASE2, this._estadoFase2());
-      }
-    } else if (resultado.gameOver) {
-      transition('game_over');
-      this._goto(STATE.GAME_OVER, { motivo: 'señales' });
-    } else {
-      this.fase2Intento++;
+  if (resultado.ok) {
+
+    // 4/4 = éxito perfecto.
+    // Desde cualquier intento, saltar directamente al último mensaje.
+    if (resultado.perfecto && this.fase2Intento < PHASE2.maxIntentos - 1) {
+      this.fase2Intento = PHASE2.maxIntentos - 1;
       this._goto(STATE.FASE2, this._estadoFase2());
+      return;
     }
+
+    // 3/4 o 4/4 en el último intento = superar Fase 2.
+    if (resultado.ultimo) {
+      transition('ok');
+      this._goto(STATE.FASE3);
+      return;
+    }
+
+    // 3/4 = avanzar normalmente al siguiente intento.
+    this.fase2Intento++;
+    this._goto(STATE.FASE2, this._estadoFase2());
+    return;
   }
+
+  // Menos de 3 correctas.
+  if (resultado.gameOver) {
+    transition('game_over');
+    this._goto(STATE.GAME_OVER, { motivo: 'señales' });
+    return;
+  }
+
+  // Falló este intento, pero todavía quedan oportunidades.
+  this.fase2Intento++;
+  this._goto(STATE.FASE2, this._estadoFase2());
+}
 
   // ---------- Fase 3 ----------
 
