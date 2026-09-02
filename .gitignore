@@ -1,0 +1,31 @@
+# Dependencias (si algún día se añaden)
+node_modules/
+
+# Salidas de build
+dist/
+build/
+out/
+
+# Archivos de sistema
+.DS_Store
+Thumbs.db
+
+# Editor / config local
+.vscode/
+.idea/
+*.local
+
+# Registros
+*.log
+
+# Artefactos de Python / QA (no forman parte de la aplicación)
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Posibles secretos (por seguridad, nunca incluir)
+.env
+.env.*
+*.key
+*.pem
+secrets.*

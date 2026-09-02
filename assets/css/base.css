@@ -1,0 +1,66 @@
+/* base.css — variables, reset, tipografía, accesibilidad */
+:root {
+  --bg: #0b0f14;
+  --panel: #11161d;
+  --panel-2: #161d27;
+  --border: #26303c;
+  --text: #dbe4ee;
+  --muted: #8a99a8;
+  --accent: #2dd4bf;
+  --accent-dim: #0e7490;
+  --danger: #ef4444;
+  --warning: #f59e0b;
+  --ok: #22c55e;
+  --ok-bg: #0b2a1a;
+  --mono: 'Cascadia Code', 'Consolas', 'Courier New', monospace;
+  --sans: 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  font-family: var(--sans);
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+#app {
+  min-height: 100vh;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+input {
+  font-family: inherit;
+}
+
+/* Accesibilidad: respeta la preferencia de menos movimiento */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* Enfoque visible razonable */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
