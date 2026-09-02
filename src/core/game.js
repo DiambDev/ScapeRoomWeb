@@ -167,33 +167,38 @@ export class Game {
     this._goto(STATE.GAME_OVER, { motivo: 'codigo' });
   }
 
-  // Valida la selección de señales del intento actual.
-  validarSeñales(selectedTexts) {
+  // Calcula el resultado de las señales SIN avanzar estado.
+  calcularResultadoSeñales(selectedTexts) {
     const intento = PHASE2.intentos[this.fase2Intento];
     const correctas = [...intento.correctSignals].sort();
     const sel = [...selectedTexts].sort();
     const match = correctas.length === sel.length && correctas.every((v, i) => v === sel[i]);
     if (match) {
+      const nextIdx = this.fase2Intento + 1;
+      const ultimo = nextIdx >= PHASE2.maxIntentos;
+      return { ok: true, gameOver: false, ultimo };
+    }
+    const isLast = this.fase2Intento >= PHASE2.maxIntentos - 1;
+    return { ok: false, gameOver: isLast, ultimo: false };
+  }
+
+  // Avanza el estado tras mostrar resultado visual al alumno.
+  avanzarSeñales(resultado) {
+    if (resultado.ok) {
       this.fase2Intento++;
-      if (this.fase2Intento >= PHASE2.maxIntentos) {
-        // Todos los intentos superados → bloquear contacto → Fase 3
+      if (resultado.ultimo) {
         transition('ok');
         this._goto(STATE.FASE3);
       } else {
         this._goto(STATE.FASE2, this._estadoFase2());
       }
-      return { ok: true, ultimo: this.fase2Intento >= PHASE2.maxIntentos };
-    }
-    // Fallo en el intento 3 (último) → GAME OVER
-    if (this.fase2Intento >= PHASE2.maxIntentos - 1) {
+    } else if (resultado.gameOver) {
       transition('game_over');
       this._goto(STATE.GAME_OVER, { motivo: 'señales' });
-      return { ok: false, gameOver: true };
+    } else {
+      this.fase2Intento++;
+      this._goto(STATE.FASE2, this._estadoFase2());
     }
-    // Fallo en intento 1 o 2 → registrar error y pasar al siguiente intento.
-    this.fase2Intento++;
-    this._goto(STATE.FASE2, this._estadoFase2());
-    return { ok: false, gameOver: false };
   }
 
   // ---------- Fase 3 ----------

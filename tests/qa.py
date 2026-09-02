@@ -1,7 +1,7 @@
-"""QA automatizado de la simulacion Cyber Escape Room (20 escenarios).
+"""QA automatizado de la simulacion Cyber Escape Room (24 escenarios).
 
 Reutiliza una sola instancia de Chrome y recarga la pagina antes de cada
-escenario para garantizar un estado limpio (el modulo se reinicia al recargar).
+escenario para garantizar un estado limpio.
 """
 
 import sys
@@ -15,14 +15,13 @@ BASE = "http://localhost:8321/index.html"
 
 RESULTS = []
 
-# señales correctas por intento (idempotente con src/data/fase2.js)
 CORRECT_SIGNALS = [
     ["URGENCIA", "ENLACE", "SOLICITUD DE CÓDIGO", "IDENTIFICACIÓN DEL USUARIO"],
-    ["URGENCIA", "ENLACE", "SOLICITUD DE CÓDIGO", "PRESIÓN", "AMENAZA"],
-    ["URGENCIA", "SOLICITUD DE CÓDIGO", "AMENAZA", "PRESIÓN", "HORA"],
+    ["URGENCIA", "ENLACE", "SOLICITUD DE CÓDIGO", "PRESIÓN"],
+    ["URGENCIA", "SOLICITUD DE CÓDIGO", "AMENAZA", "HORA"],
 ]
-FASE1_OK = ["Bloquear accesos", "Cambiar contraseñas", "Activar códigos de verificación"]
-FASE1_ERR = ["Cambiar contraseñas", "Bloquear accesos", "Activar códigos de verificación"]
+FASE1_OK = ["Bloquear accesos", "Cambiar credenciales", "Activar verificación"]
+FASE1_ERR = ["Cambiar credenciales", "Bloquear accesos", "Activar verificación"]
 
 
 def report(name, cond, detail=""):
@@ -44,7 +43,7 @@ def to_fase1(s, n):
     reload(s, n)
     s.wait_selector(".screen.warning", timeout=15)
     settle(0.6)
-    s.click(".btn-start")
+    s.click(".btn-cta")
     s.wait_selector(".screen.phase1", timeout=20)
 
 
@@ -56,7 +55,7 @@ def click_fase1(s, labels):
 
 
 def usar_señales(s, seleccion):
-    s.click_by_text(".decision-btns button", "DESCONFÍO")
+    s.click_by_text(".decision-row button", "DESCONFÍO")
     s.wait_selector(".signal-chip", timeout=10)
     settle(0.3)
     for chip in seleccion:
@@ -69,25 +68,23 @@ def usar_señales(s, seleccion):
 def desconfiar_correcto(s):
     for i in range(3):
         s.wait_selector(".screen.phase2", timeout=15)
-        settle(0.6)
+        settle(0.8)
         usar_señales(s, CORRECT_SIGNALS[i])
-        if i < 2:
-            s.wait_selector(".screen.phase2", timeout=12)
-    s.wait_selector(".screen.phase3", timeout=12)
+        settle(1.5)
+    s.wait_selector(".respaldo-card", timeout=15)
 
 
 def desconfiar_todas_erroneas(s):
     for i in range(3):
         s.wait_selector(".screen.phase2", timeout=15)
-        settle(0.6)
-        usar_señales(s, [])  # selección vacía = incorrecta
-        if i < 2:
-            s.wait_selector(".screen.phase2", timeout=12)
+        settle(0.8)
+        usar_señales(s, [])
+        settle(1.5)
     s.wait_selector(".screen.game-over", timeout=12)
 
 
 def main():
-    chrome = Chrome(port=9230)
+    chrome = Chrome(port=9231)
     try:
         s = Session(chrome.page_ws())
         s.enable_runtime()
@@ -105,8 +102,6 @@ def main():
             s.click(".seq-execute")
             s.wait_selector(".screen.phase2", timeout=15)
             desconfiar_correcto(s)
-            # fase3 -> nube
-            s.wait_selector(".respaldo-card", timeout=20)
             settle(0.4)
             s.click_by_text(".respaldo-card", "nube")
             s.wait_selector(".screen.phase3", timeout=10)
@@ -123,17 +118,14 @@ def main():
             s.click_by_text(".final-ready button", "FINALIZAR")
             s.wait_selector(".screen.victory", timeout=15)
             report("1. Camino feliz -> victory", s.exists(".screen.victory"))
-
             settle(0.6)
             s.click_by_text("button", "VER INFORME DE MISIÓN")
             s.wait_selector(".screen.debrief", timeout=10)
             report("1b. victory -> debrief", s.exists(".screen.debrief"))
-
             settle(0.5)
             s.click_by_text(".debrief button", "FINALIZAR")
             s.wait_selector(".screen.finish", timeout=10)
             report("1c. debrief -> finish", s.exists(".screen.finish"))
-
             settle(0.5)
             s.click_by_text(".finish button", "NUEVA SIMULACIÓN")
             s.wait_selector(".screen.boot", timeout=10)
@@ -147,9 +139,10 @@ def main():
             click_fase1(s, FASE1_ERR)
             settle(0.3)
             s.click(".seq-execute")
-            s.wait_selector(".screen.game-over", timeout=12)
-            report("2a. Fase1 error -> game over", s.exists(".screen.game-over"))
+            settle(2.5)
+            report("2a. Fase1 error -> game over", s.exists(".screen.game-over") or s.exists(".defeat-result"))
             report("2b. texto SISTEMA COMPROMETIDO", "SISTEMA COMPROMETIDO" in s.body_text())
+            s.wait_selector("button", timeout=5)
             settle(0.5)
             s.click_by_text("button", "REINICIAR SIMULACIÓN")
             s.wait_selector(".screen.boot", timeout=10)
@@ -165,7 +158,7 @@ def main():
             s.click(".seq-execute")
             s.wait_selector(".screen.phase2", timeout=15)
             settle(0.6)
-            s.click_by_text(".decision-btns button", "CONFÍO")
+            s.click_by_text(".decision-row button", "CONFÍO")
             s.wait_selector(".qa-block .text-input", timeout=10)
             settle(0.3)
             s.set_value(".qa-block .text-input", "123456")
@@ -174,7 +167,7 @@ def main():
             s.wait_selector(".screen.game-over", timeout=12)
             report("3a. confiar+entregar -> game over", s.exists(".screen.game-over"))
             report("3b. popup-layer presente", s.exists(".popup-layer"))
-            settle(2.5)
+            settle(3.0)
             s.click(".go-retry")
             s.wait_selector(".screen.boot", timeout=10)
             report("3c. retry popups -> boot", s.exists(".screen.boot"))
@@ -193,7 +186,7 @@ def main():
         except Exception as e:
             report("4. señales erroneas x3", False, str(e))
 
-        # ---------- 5. Fase2 fallo en intento 1 -> pasa al intento 2 ----------
+        # ---------- 5. Fase2 fallo en intento 1 -> intento 2 ----------
         try:
             to_fase1(s, nxt())
             click_fase1(s, FASE1_OK)
@@ -202,9 +195,9 @@ def main():
             s.wait_selector(".screen.phase2", timeout=15)
             settle(0.6)
             usar_señales(s, [])
+            settle(1.5)
             s.wait_selector(".screen.phase2", timeout=12)
-            txt = s.body_text()
-            report("5. fallo intento1 -> intento2", "INTENTO 2" in txt)
+            report("5. fallo intento1 -> intento2", "INTENTO 2" in s.body_text())
         except Exception as e:
             report("5. fallo intento1", False, str(e))
 
@@ -217,12 +210,13 @@ def main():
             s.wait_selector(".screen.phase2", timeout=15)
             settle(0.6)
             usar_señales(s, CORRECT_SIGNALS[0])
+            settle(1.5)
             s.wait_selector(".screen.phase2", timeout=12)
             report("6. acierto intento1 -> intento2", "INTENTO 2" in s.body_text())
         except Exception as e:
             report("6. acierto intento1", False, str(e))
 
-        # ---------- 7. Fase3 mismo equipo (respuesta correcta) ----------
+        # ---------- 7. Fase3 mismo equipo ----------
         try:
             to_fase1(s, nxt())
             click_fase1(s, FASE1_OK)
@@ -230,14 +224,13 @@ def main():
             s.click(".seq-execute")
             s.wait_selector(".screen.phase2", timeout=15)
             desconfiar_correcto(s)
-            s.wait_selector(".respaldo-card", timeout=20)
             settle(0.4)
             s.click_by_text(".respaldo-card", "mismo")
             s.wait_selector(".screen.phase3", timeout=10)
             settle(0.4)
             s.click_by_text(".qa-options .btn-ghost", "A.")
             settle(0.4)
-            report("7a. mismo respuesta A -> feedback ok", "Correcto" in s.body_text() or "correcto" in s.body_text().lower())
+            report("7a. mismo respuesta A -> feedback ok", "Correcto" in s.body_text())
             s.click_by_text(".recovery button", "CONTINUAR")
             s.wait_selector(".screen.phase4", timeout=12)
             s.wait_selector(".final-ready", timeout=20)
@@ -256,7 +249,6 @@ def main():
             s.click(".seq-execute")
             s.wait_selector(".screen.phase2", timeout=15)
             desconfiar_correcto(s)
-            s.wait_selector(".respaldo-card", timeout=20)
             settle(0.4)
             s.click_by_text(".respaldo-card", "No tengo respaldo")
             s.wait_selector(".screen.phase3", timeout=10)
@@ -273,7 +265,7 @@ def main():
             s.set_value(".docente-form .text-input", "TECSUP-2026")
             s.click_by_text(".docente-form button", "VALIDAR")
             settle(0.3)
-            report("8b. codigo docente correcto -> ok", "válido" in s.body_text().lower() or "valido" in s.body_text().lower())
+            report("8b. codigo docente correcto -> ok", "válido" in s.body_text().lower())
             s.click_by_text(".docente-form button", "CONTINUAR")
             s.wait_selector(".screen.phase4", timeout=12)
             s.wait_selector(".final-ready", timeout=20)
@@ -284,7 +276,7 @@ def main():
         except Exception as e:
             report("8. sin respaldo", False, str(e))
 
-        # ---------- 9. Fase3 nube: requerir AMBOS archivos ----------
+        # ---------- 9. Nube: requerir AMBOS archivos ----------
         try:
             to_fase1(s, nxt())
             click_fase1(s, FASE1_OK)
@@ -292,12 +284,10 @@ def main():
             s.click(".seq-execute")
             s.wait_selector(".screen.phase2", timeout=15)
             desconfiar_correcto(s)
-            s.wait_selector(".respaldo-card", timeout=20)
             settle(0.4)
             s.click_by_text(".respaldo-card", "nube")
             s.wait_selector(".screen.phase3", timeout=10)
             settle(0.4)
-            # solo 1 archivo -> restaurar debe estar deshabilitado
             s.click_by_text(".respaldo-card", "Tarea1.backup")
             settle(0.2)
             restore_disabled = s.button_disabled_by_text(".recovery", "RESTAURAR")
@@ -313,7 +303,7 @@ def main():
             s.click(".seq-execute")
             s.wait_selector(".screen.phase2", timeout=15)
             settle(0.6)
-            s.click_by_text(".decision-btns button", "CONFÍO")
+            s.click_by_text(".decision-row button", "CONFÍO")
             s.wait_selector(".qa-block .text-input", timeout=10)
             settle(0.3)
             s.set_value(".qa-block .text-input", "123")
@@ -321,7 +311,7 @@ def main():
             settle(0.4)
             still_phase2 = s.exists(".screen.phase2")
             has_error = "6 dígitos" in s.body_text()
-            report("10. codigo de 3 digitos -> rechazado en fase2", still_phase2 and has_error)
+            report("10. codigo de 3 digitos -> rechazado", still_phase2 and has_error)
         except Exception as e:
             report("10. codigo 6 digitos", False, str(e))
 
@@ -341,7 +331,7 @@ def main():
             s.click(".seq-execute")
             s.wait_selector(".screen.phase2", timeout=15)
             txt = s.body_text()
-            report("12. HUD fase2 ALTA + INGENIERÍA", "ALTA" in txt and "INGENIERÍA SOCIAL" in txt)
+            report("12. HUD fase2 ALTA + ATAQUE EN CURSO", "ALTA" in txt and "ATAQUE EN CURSO" in txt)
         except Exception as e:
             report("12. HUD fase2", False, str(e))
 
@@ -367,7 +357,6 @@ def main():
             s.click(".seq-execute")
             s.wait_selector(".screen.phase2", timeout=15)
             desconfiar_correcto(s)
-            s.wait_selector(".respaldo-card", timeout=20)
             settle(0.4)
             s.click_by_text(".respaldo-card", "nube")
             s.wait_selector(".screen.phase3", timeout=10)
@@ -384,34 +373,32 @@ def main():
         except Exception as e:
             report("14. HUD fase4", False, str(e))
 
-        # ---------- 15. Doble clic EJECUTAR no salta fase2 ----------
+        # ---------- 15. Doble clic EJECUTAR ----------
         try:
             to_fase1(s, nxt())
             click_fase1(s, FASE1_OK)
             settle(0.3)
-            # doble clic sobre el MISMO elemento (simula doble clic real)
             s.js("(function(){const b=document.querySelector('.seq-execute');b.click();b.click();return true;})()")
             s.wait_selector(".screen.phase2", timeout=12)
-            report("15. doble clic EJECUTAR -> fase2 (no salta)", s.exists(".screen.phase2"))
+            report("15. doble clic EJECUTAR -> fase2", s.exists(".screen.phase2"))
         except Exception as e:
             report("15. doble clic ejecutar", False, str(e))
 
-        # ---------- 16. Reset desde game over fase1 -> boot limpio ----------
+        # ---------- 16. Reset desde game over fase1 ----------
         try:
             to_fase1(s, nxt())
             click_fase1(s, FASE1_ERR)
             settle(0.3)
             s.click(".seq-execute")
-            s.wait_selector(".screen.game-over", timeout=12)
-            settle(0.4)
+            settle(2.5)
             s.click_by_text("button", "REINICIAR SIMULACIÓN")
             s.wait_selector(".screen.boot", timeout=10)
             clean = s.count(".screen") == 1 and s.count("[data-popup]") == 0 and s.count("[data-overlay]") == 0
-            report("16. reset gameover -> boot sin residuos", s.exists(".screen.boot") and clean)
+            report("16. reset gameover -> boot limpio", s.exists(".screen.boot") and clean)
         except Exception as e:
             report("16. reset gameover", False, str(e))
 
-        # ---------- 17. Reset desde game over codigo -> sin popups ----------
+        # ---------- 17. Reset desde game over codigo ----------
         try:
             to_fase1(s, nxt())
             click_fase1(s, FASE1_OK)
@@ -419,13 +406,12 @@ def main():
             s.click(".seq-execute")
             s.wait_selector(".screen.phase2", timeout=15)
             settle(0.6)
-            s.click_by_text(".decision-btns button", "CONFÍO")
+            s.click_by_text(".decision-row button", "CONFÍO")
             s.wait_selector(".qa-block .text-input", timeout=10)
             settle(0.3)
             s.set_value(".qa-block .text-input", "123456")
             s.click_by_text(".qa-block button", "ENVIAR CÓDIGO")
             s.wait_selector(".screen.game-over", timeout=12)
-            # reset antes de que terminen los popups (inmediato)
             settle(0.3)
             s.click(".go-retry")
             s.wait_selector(".screen.boot", timeout=10)
@@ -434,7 +420,7 @@ def main():
         except Exception as e:
             report("17. reset codigo", False, str(e))
 
-        # ---------- 18. Retry desde game over codigo (despues de popups) ----------
+        # ---------- 18. Retry tras popups ----------
         try:
             to_fase1(s, nxt())
             click_fase1(s, FASE1_OK)
@@ -442,20 +428,20 @@ def main():
             s.click(".seq-execute")
             s.wait_selector(".screen.phase2", timeout=15)
             settle(0.6)
-            s.click_by_text(".decision-btns button", "CONFÍO")
+            s.click_by_text(".decision-row button", "CONFÍO")
             s.wait_selector(".qa-block .text-input", timeout=10)
             settle(0.3)
             s.set_value(".qa-block .text-input", "123456")
             s.click_by_text(".qa-block button", "ENVIAR CÓDIGO")
             s.wait_selector(".screen.game-over", timeout=12)
-            settle(3.0)
+            settle(3.5)
             s.click(".go-retry")
             s.wait_selector(".screen.boot", timeout=10)
             report("18. retry tras popups -> boot", s.exists(".screen.boot"))
         except Exception as e:
             report("18. retry popups", False, str(e))
 
-        # ---------- 19. Fase1 comienza correctamente (slots + ejecutar deshabilitado) ----------
+        # ---------- 19. Fase1 init ----------
         try:
             to_fase1(s, nxt())
             slots3 = s.count(".seq-slot") == 3
@@ -466,25 +452,82 @@ def main():
         except Exception as e:
             report("19. fase1 init", False, str(e))
 
-        # ---------- 20. Fase2 exactamente 3 intentos (maximo respetado) ----------
+        # ---------- 20. Fase2 max 3 intentos ----------
         try:
             to_fase1(s, nxt())
             click_fase1(s, FASE1_OK)
             settle(0.3)
             s.click(".seq-execute")
             s.wait_selector(".screen.phase2", timeout=15)
-            # acierta intento1 e intento2
             settle(0.6)
             usar_señales(s, CORRECT_SIGNALS[0])
+            settle(1.5)
             s.wait_selector(".screen.phase2", timeout=12)
             settle(0.6)
             usar_señales(s, CORRECT_SIGNALS[1])
+            settle(1.5)
             s.wait_selector(".screen.phase2", timeout=12)
-            # ahora estamos en intento 3
             txt3 = s.body_text()
             report("20. intento 3 alcanzado", "INTENTO 3" in txt3)
         except Exception as e:
             report("20. 3 intentos", False, str(e))
+
+        # ---------- 21. Señales exactas intento 1 -> avanza ----------
+        try:
+            to_fase1(s, nxt())
+            click_fase1(s, FASE1_OK)
+            settle(0.3)
+            s.click(".seq-execute")
+            s.wait_selector(".screen.phase2", timeout=15)
+            settle(0.6)
+            usar_señales(s, CORRECT_SIGNALS[0])
+            settle(1.5)
+            has_ok = "sospechosa identificada" in s.body_text().lower() or "intento 2" in s.body_text().lower()
+            report("21. 4 señales correctas -> avanza", has_ok)
+        except Exception as e:
+            report("21. señales exactas", False, str(e))
+
+        # ---------- 22. 3 de 4 señales correctas -> fallo ----------
+        try:
+            to_fase1(s, nxt())
+            click_fase1(s, FASE1_OK)
+            settle(0.3)
+            s.click(".seq-execute")
+            s.wait_selector(".screen.phase2", timeout=15)
+            settle(0.6)
+            usar_señales(s, CORRECT_SIGNALS[0][:3])
+            settle(0.4)
+            has_err = "señales correctas" in s.body_text().lower() or "revisa" in s.body_text().lower()
+            report("22. 3/4 señales -> fallo", has_err)
+        except Exception as e:
+            report("22. 3 de 4 señales", False, str(e))
+
+        # ---------- 23. 0 señales correctas -> fallo ----------
+        try:
+            to_fase1(s, nxt())
+            click_fase1(s, FASE1_OK)
+            settle(0.3)
+            s.click(".seq-execute")
+            s.wait_selector(".screen.phase2", timeout=15)
+            settle(0.6)
+            usar_señales(s, [])
+            settle(0.4)
+            has_err = "señales correctas" in s.body_text().lower() or "revisa" in s.body_text().lower()
+            report("23. 0/4 señales -> fallo", has_err)
+        except Exception as e:
+            report("23. 0 señales", False, str(e))
+
+        # ---------- 24. Warning pantalla ----------
+        try:
+            reload(s, nxt())
+            s.wait_selector(".screen.warning", timeout=15)
+            txt = s.body_text()
+            has_title = "TU COMPUTADORA ESTÁ COMPROMETIDA" in txt
+            has_btn = s.exists(".btn-cta")
+            has_leyenda = "SIMULACIÓN EDUCATIVA" in txt
+            report("24. warning: titulo + boton + leyenda", has_title and has_btn and has_leyenda)
+        except Exception as e:
+            report("24. warning pantalla", False, str(e))
 
         s.teardown()
     finally:

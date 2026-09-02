@@ -1,6 +1,3 @@
-// Contenido de pantallas globales: arranque, warnings, game-over, victoria, debrief.
-
-// ---- ARRANQUE NORMAL (boot) ----
 export const BOOT = {
   titulo: 'TECSUP Secure Workspace',
   subtitulo: 'Sistema operativo funcionando normalmente.',
@@ -12,19 +9,15 @@ export const BOOT = {
   ],
 };
 
-// ---- DETECCIÓN DEL ATAQUE (warning) ----
 export const WARNING = {
   alertaTitulo: 'ALERTA DE SEGURIDAD',
-  linea1: 'Actividad maliciosa detectada.',
-  linea2: 'Se detectó acceso no autorizado.',
-  simulacion: 'SIMULACIÓN EDUCATIVA',
-  textoPequeno:
-    'Esta actividad simula un incidente de seguridad informática. No existe ningún riesgo real para este equipo.',
-  instruccion: 'No cierres la pestaña durante la misión.',
-  boton: 'INICIAR RESPUESTA AL INCIDENTE',
+  tituloPrincipal: 'TU COMPUTADORA ESTÁ COMPROMETIDA',
+  descripcion: 'Un hacker se ha infiltrado en el sistema e intenta tomar el control de tus cuentas y del equipo.',
+  simulacionLeyenda: 'SIMULACIÓN EDUCATIVA · Actividad autorizada por TECSUP · No existe riesgo real para este equipo.',
+  instruccion: 'No cierres esta pestaña durante la misión.',
+  boton: 'RESPONDER AL ATAQUE',
 };
 
-// ---- PROTOCOLO DE RESPUESTA (transition) ----
 export const TRANSITION = {
   titulo: 'INICIANDO PROTOCOLO DE RESPUESTA...',
   lineas: [
@@ -35,20 +28,23 @@ export const TRANSITION = {
   ],
 };
 
-// ---- GAME OVER POR CÓDIGO ----
 export const GAME_OVER_CODIGO = {
   feedback:
     'Nunca compartas códigos de autenticación con otra persona. Estos códigos pueden permitir que alguien complete un acceso que tú no autorizaste.',
   popups: [
-    'SESSION ERROR',
-    'CREDENTIAL TOKEN EXPOSED',
-    'ACCESS DENIED',
-    'SECURITY CONTROL DISABLED',
-    'SYSTEM COMPROMISED',
+    'ERROR', 'ACCESS DENIED', 'SESSION FAILED', 'SYSTEM ERROR',
+    'UNAUTHORIZED', 'SECURITY BREACH', 'AUTH FAILED', 'FATAL ERROR',
+    'CREDENTIAL EXPOSED', 'TOKEN INVALID', 'BREACH DETECTED', 'LOCKOUT',
+    'PERMISSION DENIED', 'MALWARE DETECTED', 'ROOT ACCESS', 'BACKDOOR',
+    'DATA EXFILTRATION', 'RANSOMWARE', 'KEYLOGGER', 'PHISHING',
+    'BRUTE FORCE', 'SQL INJECTION', 'DDoS ATTACK', 'ZERO-DAY',
+    'TROJAN HORSE', 'WORM DETECTED', 'SPYWARE', 'ADWARE',
+    'CRYPTO MINER', 'BOTNET', 'C2 SERVER', 'COMMAND INJECTION',
+    'BUFFER OVERFLOW', 'RACE CONDITION', 'MEMORY CORRUPTION',
+    'STACK SMASHING', 'HEAP SPRAY', 'USE AFTER FREE',
   ],
 };
 
-// ---- DEBRIEF / INFORME POST-INCIDENTE ----
 export const DEBRIEF = {
   titulo: 'INFORME POST-INCIDENTE',
   items: [
@@ -61,15 +57,12 @@ export const DEBRIEF = {
   mensaje:
     'Un incidente no termina cuando bloqueas al atacante. Termina cuando recuperas el control y puedes continuar trabajando de forma segura.',
   boton: 'FINALIZAR',
-
-  // Pantalla posterior "MISIÓN FINALIZADA"
   finalTitulo: 'MISIÓN FINALIZADA',
   finalMensaje: 'Buen trabajo, operador.',
   finalCredito: 'Actividad educativa — Tecsup',
   nuevaSimulacion: 'NUEVA SIMULACIÓN',
 };
 
-// ---- VICTORIA ----
 export const VICTORY = {
   titulo: 'INCIDENTE RESUELTO',
   informe: [

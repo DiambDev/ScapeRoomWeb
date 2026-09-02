@@ -33,50 +33,32 @@ def main():
         s.navigate(BASE)
         time.sleep(1.0)
 
-        # 1) Boot normal se muestra
         check("boot visible", s.js("!!document.querySelector('.screen.boot')"))
-        check(
-            "boot titulo TECSUP",
-            s.js("document.body.textContent.includes('TECSUP Secure Workspace')"),
-        )
+        check("boot titulo TECSUP",
+              s.js("document.body.textContent.includes('TECSUP Secure Workspace')"))
 
-        # 2) Tras ~2s el boot avanza a warning (deteccion)
         s.wait_selector(".screen.warning", timeout=15)
         check("warning visible tras boot", True)
-        check(
-            "warning alerta texto",
-            s.js("document.body.textContent.includes('ALERTA DE SEGURIDAD')"),
-        )
+        check("warning titulo comprometida",
+              s.js("document.body.textContent.includes('TU COMPUTADORA ESTÁ COMPROMETIDA')"))
 
-        # 3) Click INICIAR -> transition (settle para emular reaccion humana)
         time.sleep(0.6)
-        s.click(".btn-start")
+        s.click(".btn-cta")
         s.wait_selector(".screen.transition", timeout=10)
         check("transition visible", True)
-        check(
-            "transition titulo",
-            s.js("document.body.textContent.includes('INICIANDO PROTOCOLO DE RESPUESTA')"),
-        )
+        check("transition titulo",
+              s.js("document.body.textContent.includes('INICIANDO PROTOCOLO DE RESPUESTA')"))
 
-        # 4) Tras la transicion autom. -> fase1
         s.wait_selector(".screen.phase1", timeout=15)
         check("fase1 visible", True)
-        check(
-            "fase1 titulo CONTENER",
-            s.js("document.body.textContent.includes('CONTENER LA AMENAZA')"),
-        )
-        check(
-            "fase1 construccion slots",
-            s.js("document.querySelectorAll('.seq-slot').length === 3"),
-        )
-        check(
-            "fase1 tarjetas acciones",
-            s.js("document.querySelectorAll('.action-card').length === 3"),
-        )
-        check(
-            "statusbar presente",
-            s.js("!!document.querySelector('.statusbar')"),
-        )
+        check("fase1 titulo CONTENER",
+              s.js("document.body.textContent.includes('CONTENER LA AMENAZA')"))
+        check("fase1 construccion slots",
+              s.js("document.querySelectorAll('.seq-slot').length === 3"))
+        check("fase1 tarjetas acciones",
+              s.js("document.querySelectorAll('.action-card').length === 3"))
+        check("statusbar presente",
+              s.js("!!document.querySelector('.statusbar')"))
 
         s.teardown()
     finally:

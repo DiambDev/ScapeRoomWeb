@@ -4,14 +4,14 @@ Sin framework de tests (no hay Node), el QA es una batería automatizada que rec
 interfaz real con **Chrome headless** (driver CDP propio, sin dependencias) más comprobaciones
 manuales. El harness está en `tests/` (`cdp.py` + `qa.py`).
 
-## Batería de QA (20 escenarios automatizados)
+## Batería de QA (24 escenarios automatizados)
 
 | # | Escenario | Resultado esperado |
 |---|---|---|
 | 1 | Camino feliz completo → victoria → debrief → "misión finalizada" → nueva simulación | Recorre todo el flujo correctamente |
 | 1b/c/d | Victoria → debrief → finish → boot | Transiciones finales correctas |
-| 2 | Fase 1 orden incorrecto | GAME OVER (terminal simulada) + retry → boot |
-| 3 | Fase 2 confiar + entregar código | GAME OVER (pop-ups internos) + retry → boot |
+| 2 | Fase 1 orden incorrecto | GAME OVER con animación de derrota + retry → boot |
+| 3 | Fase 2 confiar + entregar código | GAME OVER (pop-ups 35+) + retry → boot |
 | 4 | Fase 2 desconfiar con señales erróneas en los 3 intentos | GAME OVER (señales) |
 | 5 | Fase 2 fallo en intento 1 | Pasa al intento 2 |
 | 6 | Fase 2 acierto en intento 1 | Pasa al intento 2 |
@@ -19,20 +19,24 @@ manuales. El harness está en `tests/` (`cdp.py` + `qa.py`).
 | 8 | Fase 3 sin respaldo (pregunta correcta + docente) | Validación docente (error y acierto) → victoria |
 | 9 | Fase 3 nube con 1 solo archivo | Botón RESTAURAR deshabilitado (exige ambos) |
 | 10 | Fase 2 código de 3 dígitos | Rechazado (exige 6 dígitos), no navega |
-| 11 | HUD en Fase 1 | Inc-042, AMENAZA CRÍTICA, FASE 1 |
-| 12 | HUD en Fase 2 | AMENAZA ALTA + INGENIERÍA SOCIAL |
+| 11 | HUD en Fase 1 | INC-042, AMENAZA CRÍTICA, FASE 1 |
+| 12 | HUD en Fase 2 | AMENAZA ALTA + ATAQUE EN CURSO |
 | 13 | HUD en Fase 3 | AMENAZA CONTROLADA |
 | 14 | HUD en Fase 4 | RESTAURACIÓN + EN DESCENSO |
-| 15 | Doble clic en EJECUTAR PROTOCOLO | No salta Fase 2 (llega a fase2) |
+| 15 | Doble clic en EJECUTAR PROTOCOLO | No duplica navegación |
 | 16 | Reset desde GAME OVER (fase 1) | Boot limpio sin residuos |
 | 17 | Reset desde GAME OVER (pop-ups) | Boot sin pop-ups/overlays residuales |
 | 18 | Retry tras terminar pop-ups de compromiso | Boot correcto |
 | 19 | Fase 1 inicialización | 3 slots, 3 tarjetas, EJECUTAR deshabilitado |
 | 20 | Fase 2 máx. intentos | Se alcanza exactamente el intento 3 |
+| 21 | 4 señales correctas exactas | Validación correcta → avanza |
+| 22 | 3 de 4 señales correctas | Feedback de error → permanece en intento |
+| 23 | 0 señales correctas | Feedback de error → permanece en intento |
+| 24 | Pantalla de warning | Título "TU COMPUTADORA ESTÁ COMPROMETIDA" + botón + leyenda |
 
 ## Comprobaciones complementarias
 - **`prefers-reduced-motion`**: animaciones casi nulas (`base.css`).
-- **Resoluciones**: escritorio amplio, 1024, 820, y reducción de columnas en `layout.css`.
+- **Resoluciones**: 1920, 1366, 1280, 1024, 820 — sin scroll horizontal.
 - **Sin secretos**: grep de tokens/claves/API keys = sin coincidencias (ver `SECURITY.md`).
 - **Sin inyección**: solo `utils/dom.js` usa `textContent`; ningún screen pasa datos a `innerHTML`.
 
@@ -40,8 +44,7 @@ manuales. El harness está en `tests/` (`cdp.py` + `qa.py`).
 - Fecha: 2026-09-02
 - Método: harness `tests/qa.py` sobre Chrome headless + servidor local (Python `http.server`),
   plus comprobaciones manuales de responsive y accesibilidad.
-- Resultado: **APROBADO — 30/30 aserciones correctas** (los 20 escenarios, algunos con varios
-  sub-checks) en la batería automatizada.
+- Resultado: **APROBADO — 34/34 aserciones correctas** (24 escenarios, varios con sub-checks).
 - Responsive: **5/5 PASS** (1920, 1366, 1280, 1024, 820 — sin scroll horizontal).
 - Smoke: **11/11 PASS** (boot → warning → transition → fase1 + statusbar).
 - Cómo re-ejecutar:

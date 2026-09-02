@@ -1,11 +1,12 @@
-// Componente: chat del supuesto soporte externo.
-// El estudiante puede "responder" (enviar código) como vía de aprendizaje del error.
 import { el } from '../utils/dom.js';
 
-export function renderChat(root, { titulo, rol, mensaje }) {
+const DOT_COLORS = ['#eab308', '#f97316', '#ef4444'];
+
+export function renderChat(root, { titulo, rol, mensaje, riskLevel = 0 }) {
+  const dotColor = DOT_COLORS[Math.min(riskLevel, 2)];
   const chat = el('div', { class: 'chat-window' }, [
     el('div', { class: 'chat-header' }, [
-      el('span', { class: 'chat-dot' }, ['●']),
+      el('span', { class: 'chat-dot', style: `color:${dotColor}` }, ['●']),
       el('div', { class: 'chat-id' }, [
         el('span', { class: 'chat-name' }, [titulo]),
         el('span', { class: 'chat-rol' }, [rol]),
@@ -23,9 +24,12 @@ export function renderChat(root, { titulo, rol, mensaje }) {
   return chat;
 }
 
-// Añade una burbuja del soporte al cuerpo del chat.
 export function addMessage(body, texto) {
-  const bubble = el('div', { class: 'bubble soporte' }, [texto]);
+  const now = new Date();
+  const hh = String(now.getHours()).padStart(2, '0');
+  const mm = String(now.getMinutes()).padStart(2, '0');
+  const ts = el('div', { class: 'bubble-ts' }, [`${hh}:${mm}`]);
+  const bubble = el('div', { class: 'bubble soporte' }, [ts, el('div', {}, [texto])]);
   body.appendChild(bubble);
   body.scrollTop = body.scrollHeight;
   return bubble;

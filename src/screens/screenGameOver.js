@@ -1,27 +1,24 @@
-// GAME OVER — pantalla de derrota.
-// Según el motivo: terminal simulada (fase1) o pop-ups internos (código/señales).
 import { el } from '../utils/dom.js';
 import { PHASE1 } from '../data/fase1.js';
 import { PHASE2 } from '../data/fase2.js';
 import { GAME_OVER_CODIGO } from '../data/gameOver.js';
-import { populate } from '../components/populate.js';
+import { registerInterval, clearTimer } from '../utils/timers.js';
 import { randomCode6 } from '../core/random.js';
 
-// El ciclo de pop-ups usa un intervalo registrado en el recolector global,
-// por lo que se limpia automáticamente en un reinicio (clearAllTimers).
+let _popupTimer = null;
+
 export function stopPopups() {
-  // Sin estado propio: la limpieza real la hace clearAllTimers en el reset.
+  clearTimer(_popupTimer);
+  _popupTimer = null;
 }
 
 export function renderGameOver(root, game, data) {
-  const motivo = data.motivo; // 'fase1' | 'codigo' | 'señales'
-
+  const motivo = data.motivo;
   if (motivo === 'fase1') {
     renderTerminal(root, game);
-    return;
+  } else {
+    renderPopups(root, game, motivo);
   }
-
-  renderPopups(root, game, motivo);
 }
 
 function renderTerminal(root, game) {
@@ -37,8 +34,7 @@ function renderTerminal(root, game) {
     el('p', { class: 'go-feedback' }, [PHASE1.gameOverFeedback]),
     el('button', { class: 'btn btn-primary', type: 'button' }, [PHASE1.retry]),
   ]);
-  const btn = panel.querySelector('button');
-  btn.addEventListener('click', () => game.volverAlInicio());
+  panel.querySelector('button').addEventListener('click', () => game.volverAlInicio());
   root.appendChild(panel);
 }
 
@@ -47,6 +43,7 @@ function renderPopups(root, game, motivo) {
   root.appendChild(overlay);
 
   const feedback = motivo === 'señales' ? PHASE2.gameOverFeedback : GAME_OVER_CODIGO.feedback;
+  const msgs = GAME_OVER_CODIGO.popups;
 
   const panel = el('div', { class: 'screen game-over' }, [
     el('h1', { class: 'go-title' }, ['SISTEMA COMPROMETIDO']),
@@ -59,9 +56,40 @@ function renderPopups(root, game, motivo) {
     stopPopups();
     game.volverAlInicio();
   });
-
-  const msgs = GAME_OVER_CODIGO.popups.map((m) => `${m} — ${randomCode6()}`);
-  populate(overlay, msgs, { onComplete: () => (btn.style.visibility = 'visible') });
-
   root.appendChild(panel);
+
+  let i = 0;
+  _popupTimer = registerInterval(() => {
+    if (i < msgs.length) {
+      const txt = msgs[i] + ' — ' + randomCode6();
+      const { w, h, x, y } = randomPos();
+      const pop = el('div', {
+        class: 'fake-popup',
+        'data-popup': '',
+        style: `left:${x}px;top:${y}px;width:${w}px;height:${h}px;`,
+      }, [
+        el('div', { class: 'fake-popup-bar' }, [
+          el('span', {}, ['Alerta del sistema']),
+          el('span', {}, ['✕']),
+        ]),
+        el('div', { class: 'fake-popup-body' }, [txt]),
+      ]);
+      overlay.appendChild(pop);
+      i++;
+    } else {
+      clearTimer(_popupTimer);
+      _popupTimer = null;
+      btn.style.visibility = 'visible';
+    }
+  }, 120);
+}
+
+function randomPos() {
+  const w = 180 + Math.floor(Math.random() * 200);
+  const h = 80 + Math.floor(Math.random() * 120);
+  const vw = typeof window !== 'undefined' ? window.innerWidth : 1920;
+  const vh = typeof window !== 'undefined' ? window.innerHeight : 1080;
+  const x = Math.random() * Math.max(vw - w, 0) * 0.85;
+  const y = Math.random() * Math.max(vh - h, 0) * 0.85;
+  return { w, h, x, y };
 }
